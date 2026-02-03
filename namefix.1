@@ -1,0 +1,133 @@
+.TH NAMEFIX 1 "February 2026" "namefix 1.0.0" "User Commands"
+.SH NAME
+namefix \- cross-platform filename validator and sanitizer
+.SH SYNOPSIS
+.B namefix
+[\fIOPTIONS\fR] [\fIDIRECTORY\fR]
+.SH DESCRIPTION
+.B namefix
+validates and sanitizes filenames to ensure compatibility across Windows, Linux, macOS, and Android.
+It detects reserved names, forbidden characters, and other filesystem issues that could cause problems
+when sharing files between different operating systems.
+.SH OPTIONS
+.TP
+.BR \-c ", " \-\-check
+Check mode (default). Detect problems without making changes.
+.TP
+.BR \-f ", " \-\-fix
+Fix mode. Sanitize problematic filenames.
+.TP
+.BR \-u ", " \-\-undo
+Undo mode. Restore original filenames from backup.
+.TP
+.BR \-d ", " \-\-dry\-run
+Preview changes without applying them.
+.TP
+.BR \-i ", " \-\-interactive
+Prompt for confirmation before each rename.
+.TP
+.BR \-b ", " \-\-batch
+Apply fixes automatically without prompting.
+.TP
+.BR \-r ", " \-\-recursive
+Process subdirectories recursively.
+.TP
+.BR \-j ", " \-\-json
+Output results in JSON format.
+.TP
+.BR \-v ", " \-\-verbose
+Show detailed output.
+.TP
+.BR \-q ", " \-\-quiet
+Suppress non-essential output.
+.TP
+.BR \-s ", " \-\-strategy " " \fISTRATEGY\fR
+Sanitization strategy: \fBunderscore\fR (default), \fBhyphen\fR, or \fBremove\fR.
+.TP
+.BR \-h ", " \-\-help
+Show help message.
+.TP
+.B \-\-version
+Show version information.
+.SH DETECTED ISSUES
+.TP
+.B Forbidden characters
+Characters not allowed on Windows: < > : " | ? * \\ /
+.TP
+.B Control characters
+ASCII control characters (0-31) and DEL (127).
+.TP
+.B Reserved names
+Windows reserved device names: CON, PRN, AUX, NUL, COM1-9, LPT1-9.
+.TP
+.B Trailing dots/spaces
+Filenames ending with dots or spaces (problematic on Windows).
+.TP
+.B Leading spaces
+Filenames starting with spaces.
+.TP
+.B Length exceeded
+Filenames exceeding 255 bytes.
+.TP
+.B Problematic Unicode
+Zero-width characters, RTL marks, and certain emoji ranges.
+.TP
+.B Case conflicts
+Multiple files that differ only in case (problematic on case-insensitive systems).
+.SH EXIT STATUS
+.TP
+.B 0
+Success, no problems found (check mode) or all fixes applied.
+.TP
+.B 1
+Error occurred during operation.
+.TP
+.B 2
+Problems detected (check mode only).
+.SH FILES
+.TP
+.I .namefix_backup/
+Directory containing backup information for undo functionality.
+.TP
+.I .namefix_undo.log
+Log file recording original and new filenames.
+.SH EXAMPLES
+Check current directory for issues:
+.RS
+.B namefix .
+.RE
+.PP
+Preview fixes without applying:
+.RS
+.B namefix \-f \-d ~/Downloads
+.RE
+.PP
+Interactive fix mode:
+.RS
+.B namefix \-f \-i /path/to/files
+.RE
+.PP
+Batch fix recursively:
+.RS
+.B namefix \-f \-b \-r /path/to/files
+.RE
+.PP
+Undo previous renames:
+.RS
+.B namefix \-u .
+.RE
+.PP
+JSON output for scripting:
+.RS
+.B namefix \-c \-j . > report.json
+.RE
+.SH AUTHOR
+Written by pinkorca.
+.SH REPORTING BUGS
+Report bugs at: <https://github.com/pinkorca/namefix/issues>
+.SH COPYRIGHT
+Copyright \(co 2026 pinkorca.
+License GPLv3+: GNU GPL version 3 or later.
+.SH SEE ALSO
+.BR mv (1),
+.BR rename (1)

@@ -44,6 +44,12 @@ cleanup() {
 
 trap 'cleanup' EXIT
 
+check_dependencies() {
+    if ! command -v perl &>/dev/null; then
+        msg_warn "perl not found - Unicode detection will be limited"
+    fi
+}
+
 usage() {
     cat <<'EOF'
 namefix - Cross-platform filename validator and sanitizer
@@ -603,6 +609,7 @@ main() {
     fi
 
     if ! $JSON_OUTPUT && ! $QUIET; then
+        check_dependencies
         msg "${BOLD}namefix v${VERSION}${NC}"
         msg "Target: ${BLUE}$TARGET_DIR${NC}"
         msg "Mode: ${CYAN}$MODE${NC}"

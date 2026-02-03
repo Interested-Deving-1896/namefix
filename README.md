@@ -12,6 +12,40 @@ A robust bash script for validating and sanitizing filenames to ensure compatibi
 
 ## Installation
 
+### Quick Install (One-liner)
+
+```bash
+curl -sL https://raw.githubusercontent.com/pinkorca/namefix/main/namefix.sh | sudo tee /usr/local/bin/namefix >/dev/null && sudo chmod +x /usr/local/bin/namefix
+```
+
+Or without sudo (installs to `~/.local/bin`):
+```bash
+mkdir -p ~/.local/bin && curl -sL https://raw.githubusercontent.com/pinkorca/namefix/main/namefix.sh -o ~/.local/bin/namefix && chmod +x ~/.local/bin/namefix
+```
+
+### Full Install (with man page and completions)
+
+**System-wide** (may require sudo):
+```bash
+git clone https://github.com/pinkorca/namefix.git
+cd namefix
+./install.sh
+```
+
+**User-only** (no sudo needed):
+```bash
+git clone https://github.com/pinkorca/namefix.git
+cd namefix
+./install.sh --user
+```
+
+To uninstall:
+```bash
+./install.sh uninstall
+```
+
+### Manual Install
+
 1. Download the script:
    ```bash
    curl -O https://raw.githubusercontent.com/pinkorca/namefix/main/namefix.sh
@@ -31,34 +65,34 @@ A robust bash script for validating and sanitizing filenames to ensure compatibi
 
 Test a directory for issues (without making changes):
 ```bash
-./namefix.sh /path/to/files
+namefix /path/to/files
 ```
 
 Preview what would be renamed:
 ```bash
-./namefix.sh --fix --dry-run /path/to/files
+namefix --fix --dry-run /path/to/files
 ```
 
 ## Usage Examples
 
 **Interactive Mode**: Review each change before applying
 ```bash
-./namefix.sh --fix --interactive .
+namefix --fix --interactive .
 ```
 
 **Batch Mode**: Automatically fix all files in a directory (recursive)
 ```bash
-./namefix.sh --fix --batch --recursive ~/Downloads
+namefix --fix --batch --recursive ~/Downloads
 ```
 
 **JSON Output**: Integrate with other scripts or tools
 ```bash
-./namefix.sh --check --json . > report.json
+namefix --check --json . > report.json
 ```
 
 **Undo Changes**: Restore filenames from the last operation
 ```bash
-./namefix.sh --undo .
+namefix --undo .
 ```
 
 ## Options
@@ -76,6 +110,18 @@ Preview what would be renamed:
 | `-v`, `--verbose` | Show detailed output |
 | `-q`, `--quiet` | Suppress non-essential output |
 | `-s`, `--strategy` | Sanitization strategy: `underscore` (default), `hyphen`, `remove` |
+
+## Shell Completions
+
+The installer automatically installs completions for:
+- **Bash** (`~/.local/share/bash-completion/completions/` or `/etc/bash_completion.d/`)
+- **Zsh** (`~/.oh-my-zsh/completions/` or system zsh site-functions)
+- **Fish** (`~/.config/fish/completions/`)
+
+## Dependencies
+
+- **bash** >= 4.0
+- **perl** (optional, for Unicode detection)
 
 ## License
 
