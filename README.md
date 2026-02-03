@@ -16,58 +16,22 @@ A robust bash script for validating and sanitizing filenames to ensure compatibi
 
 ```bash
 yay -S namefix-git
-# or
-paru -S namefix-git
 ```
 
-### Quick Install (One-liner)
+### Quick Install
 
 ```bash
-curl -sL https://raw.githubusercontent.com/pinkorca/namefix/main/namefix.sh | sudo tee /usr/local/bin/namefix >/dev/null && sudo chmod +x /usr/local/bin/namefix
+curl -sL https://raw.githubusercontent.com/pinkorca/namefix/main/namefix.sh -o ~/.local/bin/namefix && chmod +x ~/.local/bin/namefix
 ```
 
-Or without sudo (installs to `~/.local/bin`):
-```bash
-mkdir -p ~/.local/bin && curl -sL https://raw.githubusercontent.com/pinkorca/namefix/main/namefix.sh -o ~/.local/bin/namefix && chmod +x ~/.local/bin/namefix
-```
+### From Source (with man page and completions)
 
-### Full Install (with man page and completions)
-
-**System-wide** (may require sudo):
 ```bash
 git clone https://github.com/pinkorca/namefix.git
 cd namefix
-./install.sh
+./install.sh         # system-wide (may need sudo)
+./install.sh --user  # user-only (no sudo)
 ```
-
-**User-only** (no sudo needed):
-```bash
-git clone https://github.com/pinkorca/namefix.git
-cd namefix
-./install.sh --user
-```
-
-To uninstall:
-```bash
-./install.sh uninstall
-```
-
-### Manual Install
-
-1. Download the script:
-   ```bash
-   curl -O https://raw.githubusercontent.com/pinkorca/namefix/main/namefix.sh
-   ```
-
-2. Make it executable:
-   ```bash
-   chmod +x namefix.sh
-   ```
-
-3. (Optional) Move to your path:
-   ```bash
-   sudo mv namefix.sh /usr/local/bin/namefix
-   ```
 
 ## Quick Start
 
