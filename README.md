@@ -12,6 +12,14 @@ A robust bash script for validating and sanitizing filenames to ensure compatibi
 
 ## Installation
 
+### Arch Linux (AUR)
+
+```bash
+yay -S namefix-git
+# or
+paru -S namefix-git
+```
+
 ### Quick Install (One-liner)
 
 ```bash
