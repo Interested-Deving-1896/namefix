@@ -16,6 +16,7 @@ readonly BLUE='\033[0;34m'
 readonly CYAN='\033[0;36m'
 readonly BOLD='\033[1m'
 readonly NC='\033[0m'
+readonly PAD=" "
 
 # Globals
 declare -i TOTAL_FILES=0
@@ -110,7 +111,7 @@ progress_bar() {
     $QUIET && return 0
     $JSON_OUTPUT && return 0
     local current=$1 total=$2
-    local width=40
+    local width=20
     local percent=0 filled=0 empty=$width
     if ((total > 0)); then
         percent=$((current * 100 / total))
@@ -121,7 +122,7 @@ progress_bar() {
     local i
     for ((i = 0; i < filled; i++)); do bar_filled+="#"; done
     for ((i = 0; i < empty; i++)); do bar_empty+="."; done
-    printf "\r${BLUE}Progress: [%s%s] %d/%d (%d%%)${NC}" \
+    printf "\r${PAD}${BLUE}Progress: [%s%s] %d/%d (%d%%)${NC}" \
         "$bar_filled" "$bar_empty" "$current" "$total" "$percent"
     return 0
 }
@@ -402,8 +403,8 @@ process_file() {
             "$(json_escape "$filepath")" \
             "$(printf '"%s",' "${issues_arr[@]}" | sed 's/,$//')"
     else
-        msg "${YELLOW}→ $name${NC}"
-        msg "  Issues: $issues_str"
+        msg "${PAD}${YELLOW}→ $name${NC}"
+        msg "${PAD}  Issues: $issues_str"
     fi
 
     if [[ "$MODE" == "fix" ]]; then
@@ -413,11 +414,11 @@ process_file() {
         if $JSON_OUTPUT; then
             printf ',"suggested":"%s"' "$(json_escape "$newname")"
         else
-            msg "  Suggested: ${GREEN}$newname${NC}"
+            msg "${PAD}  Suggested: ${GREEN}$newname${NC}"
         fi
 
         if $INTERACTIVE && ! $DRY_RUN; then
-            printf "  Apply rename? [y/N/q]: "
+            printf "${PAD}  Apply rename? [y/N/q]: "
             read -r response
             case "$response" in
                 [yY]) do_rename "$filepath" "$newname" ;;
@@ -427,7 +428,7 @@ process_file() {
                     ;;
                 *)
                     ((++SKIPPED_FILES)) || true
-                    msg "  Skipped"
+                    msg "${PAD}  Skipped"
                     ;;
             esac
         elif ! $INTERACTIVE; then
@@ -450,7 +451,7 @@ do_undo() {
     local count=0
     local restored=0
 
-    msg "${BOLD}Restoring original filenames...${NC}"
+    msg "${PAD}${BOLD}Restoring original filenames...${NC}"
 
     while IFS='|' read -r _timestamp _workdir original newname; do
         [[ -z "$original" ]] && continue
@@ -461,17 +462,17 @@ do_undo() {
 
         if [[ -e "$current_path" ]]; then
             if $DRY_RUN; then
-                msg "Would restore: '$newname' -> '$original'"
+                msg "${PAD}Would restore: '$newname' -> '$original'"
             else
                 if mv "$current_path" "$original_path" 2>/dev/null; then
-                    msg_success "Restored: '$newname' -> '$original'"
+                    msg_success "${PAD}Restored: '$newname' -> '$original'"
                     ((++restored)) || true
                 else
                     msg_error "Failed to restore '$newname'"
                 fi
             fi
         else
-            msg_warn "File not found: '$newname'"
+            msg_warn "${PAD}File not found: '$newname'"
         fi
     done <"$backup_file"
 
@@ -479,9 +480,9 @@ do_undo() {
         mv "$backup_file" "$backup_file.done"
     fi
 
-    msg "\n${BOLD}Undo Summary:${NC}"
-    msg "  Entries processed: $count"
-    msg "  Files restored: $restored"
+    msg "\n${PAD}${BOLD}Undo Summary:${NC}"
+    msg "${PAD}  Entries processed: $count"
+    msg "${PAD}  Files restored: $restored"
 }
 
 collect_files() {
@@ -509,22 +510,22 @@ print_summary() {
             "$TOTAL_FILES" "$PROBLEM_FILES" "$FIXED_FILES" "$SKIPPED_FILES" "$ERRORS"
     else
         echo ""
-        msg "${BOLD}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
-        msg "${BOLD}Summary${NC}"
-        msg "${BOLD}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
-        msg "  Total files checked: ${BLUE}$TOTAL_FILES${NC}"
-        msg "  Problems detected:   ${YELLOW}$PROBLEM_FILES${NC}"
+        msg "${PAD}${BOLD}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+        msg "${PAD}${BOLD}Summary${NC}"
+        msg "${PAD}${BOLD}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+        msg "${PAD}  Total files checked: ${BLUE}$TOTAL_FILES${NC}"
+        msg "${PAD}  Problems detected:   ${YELLOW}$PROBLEM_FILES${NC}"
         if [[ "$MODE" == "fix" ]]; then
-            msg "  Files fixed:         ${GREEN}$FIXED_FILES${NC}"
-            msg "  Files skipped:       ${CYAN}$SKIPPED_FILES${NC}"
+            msg "${PAD}  Files fixed:         ${GREEN}$FIXED_FILES${NC}"
+            msg "${PAD}  Files skipped:       ${CYAN}$SKIPPED_FILES${NC}"
         fi
         if [[ "$ERRORS" -gt 0 ]]; then
-            msg "  Errors:              ${RED}$ERRORS${NC}"
+            msg "${PAD}  Errors:              ${RED}$ERRORS${NC}"
         fi
-        msg "${BOLD}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+        msg "${PAD}${BOLD}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
 
         if $DRY_RUN; then
-            msg "${YELLOW}(Dry run - no changes made)${NC}"
+            msg "${PAD}${YELLOW}(Dry run - no changes made)${NC}"
         fi
     fi
 }
@@ -610,11 +611,11 @@ main() {
 
     if ! $JSON_OUTPUT && ! $QUIET; then
         check_dependencies
-        msg "${BOLD}namefix v${VERSION}${NC}"
-        msg "Target: ${BLUE}$TARGET_DIR${NC}"
-        msg "Mode: ${CYAN}$MODE${NC}"
-        $DRY_RUN && msg "${YELLOW}(Dry run mode)${NC}"
-        $INTERACTIVE && msg "${CYAN}(Interactive mode)${NC}"
+        msg "${PAD}${BOLD}namefix v${VERSION}${NC}"
+        msg "${PAD}Target: ${BLUE}$TARGET_DIR${NC}"
+        msg "${PAD}Mode: ${CYAN}$MODE${NC}"
+        $DRY_RUN && msg "${PAD}${YELLOW}(Dry run mode)${NC}"
+        $INTERACTIVE && msg "${PAD}${CYAN}(Interactive mode)${NC}"
         echo ""
     fi
 
@@ -628,7 +629,7 @@ main() {
     TOTAL_FILES=${#files_list[@]}
 
     if ((TOTAL_FILES == 0)); then
-        $JSON_OUTPUT || msg "No files found."
+        $JSON_OUTPUT || msg "${PAD}No files found."
         $JSON_OUTPUT && printf '],\n' || true
         print_summary
         exit 0

@@ -58,7 +58,7 @@ install_with_sudo() {
 
 do_install() {
     local user_only="${1:-false}"
-    
+
     msg "${BOLD}Installing namefix...${NC}"
     check_deps
 
@@ -68,7 +68,7 @@ do_install() {
         bindir="$HOME/.local/bin"
         mkdir -p "$bindir"
     fi
-    
+
     if [[ -w "$bindir" ]] || $user_only; then
         mkdir -p "$bindir"
         install -m 755 namefix.sh "$bindir/namefix"
@@ -85,7 +85,7 @@ do_install() {
         if $user_only; then
             mandir="$HOME/.local/share/man/man1"
         fi
-        
+
         if [[ -w "$mandir" ]] || $user_only; then
             mkdir -p "$mandir"
             install -m 644 namefix.1 "$mandir/namefix.1"
@@ -101,7 +101,7 @@ do_install() {
     if [[ -f "completions/namefix.bash" ]]; then
         local bash_user_dir="$HOME/.local/share/bash-completion/completions"
         local bash_system_dir="/etc/bash_completion.d"
-        
+
         if $user_only || [[ ! -d "$bash_system_dir" ]]; then
             mkdir -p "$bash_user_dir"
             install -m 644 completions/namefix.bash "$bash_user_dir/namefix"
@@ -119,7 +119,7 @@ do_install() {
     # Zsh completion
     if [[ -f "completions/namefix.zsh" ]]; then
         local zsh_installed=false
-        
+
         # Try oh-my-zsh first
         if [[ -d "$HOME/.oh-my-zsh" ]]; then
             local zsh_dir="$HOME/.oh-my-zsh/completions"
@@ -145,14 +145,14 @@ do_install() {
             msg_success "Installed zsh completion to $zsh_dir"
             zsh_installed=true
         fi
-        
+
         $zsh_installed || msg_warn "Zsh completion: add completions/namefix.zsh to your fpath"
     fi
 
     # Fish completion
     if [[ -f "completions/namefix.fish" ]]; then
         local fish_installed=false
-        
+
         if [[ -d "$HOME/.config/fish" ]]; then
             local fish_dir="$HOME/.config/fish/completions"
             mkdir -p "$fish_dir"
@@ -169,14 +169,14 @@ do_install() {
             msg_success "Installed fish completion to $fish_dir"
             fish_installed=true
         fi
-        
+
         $fish_installed || msg_warn "Fish completion: copy completions/namefix.fish to ~/.config/fish/completions/"
     fi
 
     echo ""
     msg "${GREEN}${BOLD}Installation complete!${NC}"
     msg "Run 'namefix --help' to get started."
-    
+
     if $user_only; then
         msg ""
         msg "${YELLOW}Note: Make sure ~/.local/bin is in your PATH${NC}"
@@ -222,12 +222,33 @@ main() {
 
     while [[ $# -gt 0 ]]; do
         case "$1" in
-            install) action="install"; shift ;;
-            uninstall) action="uninstall"; shift ;;
-            --user) user_only=true; shift ;;
-            --prefix) PREFIX="$2"; BINDIR="$PREFIX/bin"; MANDIR="$PREFIX/share/man/man1"; shift 2 ;;
-            --help|-h) usage; exit 0 ;;
-            *) msg_error "Unknown option: $1"; usage; exit 1 ;;
+            install)
+                action="install"
+                shift
+                ;;
+            uninstall)
+                action="uninstall"
+                shift
+                ;;
+            --user)
+                user_only=true
+                shift
+                ;;
+            --prefix)
+                PREFIX="$2"
+                BINDIR="$PREFIX/bin"
+                MANDIR="$PREFIX/share/man/man1"
+                shift 2
+                ;;
+            --help | -h)
+                usage
+                exit 0
+                ;;
+            *)
+                msg_error "Unknown option: $1"
+                usage
+                exit 1
+                ;;
         esac
     done
 
