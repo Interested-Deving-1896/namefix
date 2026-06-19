@@ -30,6 +30,7 @@ MODE="check"
 DRY_RUN=false
 INTERACTIVE=false
 JSON_OUTPUT=false
+JSON_FIRST=true
 VERBOSE=false
 QUIET=false
 RECURSIVE=false
@@ -399,6 +400,8 @@ process_file() {
     )
 
     if $JSON_OUTPUT; then
+        $JSON_FIRST || printf ','
+        JSON_FIRST=false
         printf '{"file":"%s","issues":[%s]' \
             "$(json_escape "$filepath")" \
             "$(printf '"%s",' "${issues_arr[@]}" | sed 's/,$//')"
@@ -506,7 +509,7 @@ print_summary() {
     $QUIET && return
 
     if $JSON_OUTPUT; then
-        printf '{"summary":{"total":%d,"problems":%d,"fixed":%d,"skipped":%d,"errors":%d}}\n' \
+        printf '"summary":{"total":%d,"problems":%d,"fixed":%d,"skipped":%d,"errors":%d}}\n' \
             "$TOTAL_FILES" "$PROBLEM_FILES" "$FIXED_FILES" "$SKIPPED_FILES" "$ERRORS"
     else
         echo ""
@@ -619,7 +622,7 @@ main() {
         echo ""
     fi
 
-    $JSON_OUTPUT && printf '{"results":[\n' || true
+    $JSON_OUTPUT && printf '{"results":[' || true
 
     local files_list=()
     while IFS= read -r -d '' file; do
@@ -630,29 +633,22 @@ main() {
 
     if ((TOTAL_FILES == 0)); then
         $JSON_OUTPUT || msg "${PAD}No files found."
-        $JSON_OUTPUT && printf '],\n' || true
+        $JSON_OUTPUT && printf '],' || true
         print_summary
         exit 0
     fi
 
-    local first_json=true
     for filepath in "${files_list[@]}"; do
         ((++CHECKED_FILES)) || true
 
         ! $JSON_OUTPUT && ! $QUIET && progress_bar "$CHECKED_FILES" "$TOTAL_FILES"
-
-        if $JSON_OUTPUT && ! $first_json; then
-            # JSON separator handled in process_file
-            :
-        fi
-        first_json=false
 
         process_file "$filepath"
     done
 
     ! $JSON_OUTPUT && ! $QUIET && echo ""
 
-    $JSON_OUTPUT && printf '],\n' || true
+    $JSON_OUTPUT && printf '],' || true
 
     print_summary
 
