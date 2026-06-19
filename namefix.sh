@@ -502,7 +502,9 @@ collect_files() {
         done < <(find "$target" -maxdepth 1 -type f -print0 2>/dev/null)
     fi
 
-    printf '%s\0' "${files[@]}"
+    if (( ${#files[@]} > 0 )); then
+        printf '%s\0' "${files[@]}"
+    fi
 }
 
 print_summary() {
