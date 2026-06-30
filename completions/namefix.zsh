@@ -28,7 +28,10 @@ _namefix() {
         '*:directory:_files -/'
     )
 
-    _arguments -s -S $opts
+    local state state_descr line
+    typeset -A opt_args
+
+    _arguments -s -S $opts && return
 
     case $state in
         strategy)

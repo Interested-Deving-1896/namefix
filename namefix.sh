@@ -3,7 +3,7 @@
 # https://github.com/pinkorca/namefix
 set -euo pipefail
 
-readonly VERSION="1.0.0"
+readonly VERSION="1.0.1"
 readonly BACKUP_DIR=".namefix_backup"
 readonly BACKUP_LOG=".namefix_undo.log"
 readonly MAX_FILENAME_BYTES=255
@@ -30,7 +30,7 @@ MODE="check"
 DRY_RUN=false
 INTERACTIVE=false
 JSON_OUTPUT=false
-JSON_FIRST=true
+JSON_FIRST=true  # Tracks comma separation between JSON array elements
 VERBOSE=false
 QUIET=false
 RECURSIVE=false
@@ -135,7 +135,17 @@ json_escape() {
     str="${str//$'\n'/\\n}"
     str="${str//$'\r'/\\r}"
     str="${str//$'\t'/\\t}"
-    printf '%s' "$str"
+    # Escape remaining control characters (U+0000-U+001F, U+007F) per RFC 8259
+    local result="" i char hex
+    for ((i = 0; i < ${#str}; i++)); do
+        char="${str:$i:1}"
+        hex=$(printf '%d' "'$char" 2>/dev/null) || { result+="$char"; continue; }
+        if ((hex >= 0 && hex <= 31)) || ((hex == 127)); then
+            printf -v char '\\u%04x' "$hex"
+        fi
+        result+="$char"
+    done
+    printf '%s' "$result"
 }
 
 is_reserved_name() {
@@ -150,7 +160,8 @@ is_reserved_name() {
 
 has_forbidden_chars() {
     local name="$1"
-    [[ "$name" =~ [:\<\>\"\|\?\*\\\/] ]] && return 0
+    local re='[:<>"|?*\\/]'
+    [[ "$name" =~ $re ]] && return 0
     return 1
 }
 
@@ -173,9 +184,10 @@ has_trailing_dot_space() {
     return 1
 }
 
-has_leading_dot_space() {
+has_leading_space() {
     local name="$1"
-    [[ "$name" =~ ^[\ ] ]] && return 0
+    local re='^[[:space:]]'
+    [[ "$name" =~ $re ]] && return 0
     return 1
 }
 
@@ -198,20 +210,32 @@ has_problematic_unicode() {
     return 1
 }
 
+# Cache for case-conflict detection: maps dir -> associative array of lowercased names
+declare -A _CASE_CACHE_DIR
+declare -A _CASE_CACHE_COUNTS
+
+_build_case_cache() {
+    local dir="$1"
+    [[ -n "${_CASE_CACHE_DIR[$dir]+x}" ]] && return 0
+    _CASE_CACHE_DIR["$dir"]=1
+    local f fn lower
+    while IFS= read -r -d '' f; do
+        fn=$(basename "$f")
+        lower="${fn,,}"
+        local key="$dir|$lower"
+        _CASE_CACHE_COUNTS["$key"]=$(( ${_CASE_CACHE_COUNTS["$key"]:-0} + 1 ))
+    done < <(find "$dir" -maxdepth 1 -type f -print0 2>/dev/null)
+}
+
 has_case_conflict() {
     local filepath="$1"
     local dir name lower_name
     dir=$(dirname "$filepath")
     name=$(basename "$filepath")
     lower_name="${name,,}"
-    local count=0
-    local f fn
-    while IFS= read -r f; do
-        [[ -z "$f" ]] && continue
-        fn=$(basename "$f")
-        [[ "${fn,,}" == "$lower_name" ]] && ((++count)) || true
-    done < <(find "$dir" -maxdepth 1 -name "*" 2>/dev/null || true)
-    if ((count > 1)); then
+    _build_case_cache "$dir"
+    local key="$dir|$lower_name"
+    if (( ${_CASE_CACHE_COUNTS["$key"]:-0} > 1 )); then
         return 0
     fi
     return 1
@@ -227,7 +251,7 @@ detect_issues() {
     has_control_chars "$name" && issues+=("control_chars")
     is_reserved_name "$name" && issues+=("reserved_name")
     has_trailing_dot_space "$name" && issues+=("trailing_dot_space")
-    has_leading_dot_space "$name" && issues+=("leading_space")
+    has_leading_space "$name" && issues+=("leading_space")
     exceeds_length "$name" && issues+=("length_exceeded")
     has_problematic_unicode "$name" && issues+=("problematic_unicode")
     has_case_conflict "$filepath" && issues+=("case_conflict")
@@ -265,15 +289,18 @@ sanitize_name() {
     name="$result"
 
     # Replace forbidden characters
-    name=$(printf '%s' "$name" | sed "s/[:<>\"|\?\*\\\/]/${replacement}/g")
+    name=$(printf '%s' "$name" | sed "s/[:<>\"|?*\\\/]/${replacement}/g")
 
     # Remove problematic Unicode (zero-width, RTL marks)
     name=$(printf '%s' "$name" | perl -CSD -pe 's/[\x{200B}-\x{200F}\x{202A}-\x{202E}\x{2060}-\x{206F}\x{FEFF}]//g' 2>/dev/null || echo "$name")
 
     # Handle trailing dots/spaces
-    name="${name%.}"
-    name="${name% }"
-    name="${name#' '}"
+    while [[ "$name" =~ [.\ ]$ ]]; do name="${name%?}"; done
+    # Handle leading spaces
+    while [[ "$name" =~ ^\  ]]; do name="${name#?}"; done
+
+    # Fallback if name becomes empty after sanitization
+    [[ -z "$name" ]] && name="_"
 
     # Handle reserved names
     local base="${name%%.*}"
@@ -579,6 +606,10 @@ main() {
                 shift
                 ;;
             -s | --strategy)
+                if [[ $# -lt 2 ]]; then
+                    msg_error "Option $1 requires an argument"
+                    exit 1
+                fi
                 SANITIZE_STRATEGY="$2"
                 shift 2
                 ;;
